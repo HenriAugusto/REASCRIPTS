@@ -1,0 +1,67 @@
+// GUITAR PRO 5  |  Reaper 
+//    Reverb     |    91 - Effects
+//    Phaser     |    92 - Tremolo
+//    Chorus     |    93 - Chorus
+//    Tremolo    |    95 - Phaser
+
+desc:Midi Note to Frequency
+slider1:1<0,3,1{None (Bypass),All Channels,Channel 1,Channel 2}>Base CC:
+slider2:32<0,127,1>Incoming Note On
+slider3:440<10,13290,0.0001>Frequency
+slider4:10101010<10,12345678,1>Status Byte
+slider5:10001000<10,12345678,1>Msg1
+slider6:10001000<10,12345678,1>Msg2
+slider7:10001000<10,12345678,1>Msg3
+slider8:32<0,127,1>Incoming CC
+slider9:32<0,127,1>Incoming Value
+
+@init
+    inc_cc_slider = 8;
+
+//@slider
+//something=slider1*srate;
+@block
+ 
+while( midirecv(offset,msg1, msg2, msg3) ?  (
+    status = msg1&$xF0; //Get status byte
+      
+    CC_number = msg23&$xff; //Get incoming CC number
+    CC_value = (msg23/256)&$xff; //Get incoming CC value
+    //We don't want to do anything if the incoming CC is unused
+    
+        //updates Note On
+        slider(2) = msg2;
+        sliderchange( 2 );
+      
+        //updates Incoming CC
+        slider(inc_cc_slider) = CC_number;
+        sliderchange( slider(inc_cc_slider) );
+        //updates Incoming Value 
+        slider(inc_cc_slider) = CC_value;
+        sliderchange( slider(inc_cc_slider) );
+        //updates Status
+        slider(4) = status;
+        sliderchange( slider4 );
+        //updates Msg1
+        slider(5) = msg1;
+        sliderchange( slider5 );
+        //updates Msg2
+        slider(6) = msg2;
+        sliderchange( slider6 );
+
+    //If we have recieved a CC message - The status byte will be between 176 and 191.
+    status >= 176 && status <= 191 ? (
+        inc_cc_slider = 8;
+    );
+
+    interval = (msg2-69);
+    frequency = 440*2^(  interval/12  );
+    slider3 = frequency;
+    sliderchange( slider3 );
+          
+     midisend(offset, msg1, msg2, msg3); //Pass on original message unchanged   
+      
+);)
+//@sample
+//spl0=spl0;
+//spl1=spl1;
