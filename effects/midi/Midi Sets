@@ -1,0 +1,242 @@
+// GUITAR PRO 5  |  Reaper 
+//    Reverb     |    91 - Effects
+//    Phaser     |    92 - Tremolo
+//    Chorus     |    93 - Chorus
+//    Tremolo    |    95 - Phaser
+
+//this plugin allows you to save a set of 16 values
+
+//how does it work?
+// 1 - you choose a CC to use to control the sets. Chorus for example.
+// 2 - Midi CC data goes from 0 to 127. So if you receive a Chorus message the plugin checks it range
+
+// Chorus between 0 and 15 => Set 1
+// Chorus between 16 and 31 => Set 2
+// Chorus between 32 and 47 => Set 3
+//...
+// Chorus between 96 and 111 => Set 15
+// Chorus between 112 and 127 => Set 16
+
+// This is great when you want to modulate a lot of settings at once.
+// Example: You can have up to 10 controls of a Synth modulated by the sliders "Value (read only)" 1 to 10.
+// Those always display the values of the current set. The current set is displayed in the "Current used set" set slider.
+// You can change it by clicking it or using the midi CC you've assigned in "Source CC"
+
+// debug sliders are used for convenience. "Incoming CC" shows the midi number of any CC message while "Incoming Value" shows it's value.
+
+
+
+desc:Midi Sets
+slider1:93<0,16,1{0 Bank Sel M,1 Mod Wheel M,2 Breath M,3,4 Foot P M,5 Porta M,6 Data Entry M,7 Vol M,8 Balance M,9,10 Pan M,11 Expression M,12 Ctrl 1 M,13 Ctrl 2 M,14,15,16 GP Slider 1,17 GP Slider 2,18 GP Slider 3,19 GP Slider 4,20,21,22,23,24,25,26,27,28,29,30,31,32 Bank Sel L,33 Mod Wheel L,34 Breath L,35,36 Foot P L,37 Porta L,38 Data Entry L,39 Vol L,40 Balance L,41,42 Pan L,43 Expression L,44 Ctrl 1 L,45 Ctrl 2 L,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64 Hold P sw,65 Porta sw,66 Sustenuto sw,67 Soft P sw,68 Legato P sw,69 Hold 2 P sw,70 S.Variation,71 S.Timbre,72 Release,73 Attack,74 Cutoff,75 Decay,76 S.Ctrl 7,77 S.Ctrl 8,78 S.Ctrl 9,79 S.Ctrl 10,80 GP B.1 sw,81 GP B.2 sw,82 GP B.3 sw,83 GP B.4 sw,84,85,86,87,88,89,90,91 Effects Lv,92 Trem Lv,93 Chorus Lv,94 Celeste Lv,95 Phaser Lv,96 Data B. Inc,97 Data B. Dec,98 NRP L,99 NRP M,100 RP L,101 RP M,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,NOT USED}>Source CC:
+slider2:1<1,16,1>Current used set
+slider3:0<0,15,1{Set 1,Set 2,Set 3,Set 4,Set 5,Set 6,Set 7,Set 8,Set 9,Set 10,Set 11,Set 12,Set 13,Set 14,Set 15,Set 16 }>Visualize set:
+slider4:63<0,127,1>Setting 1
+slider5:63<0,127,1>Setting 2
+slider6:63<0,127,1>Setting 3
+slider7:63<0,127,1>Setting 4
+slider8:63<0,127,1>Setting 5
+slider9:63<0,127,1>Setting 6
+slider10:63<0,127,1>Setting 7
+slider11:63<0,127,1>Setting 8
+slider12:63<0,127,1>Setting 9
+slider13:63<0,127,1>Setting 10
+slider14:63<0,127,1>Setting 11
+slider15:63<0,127,1>Setting 12
+slider16:63<0,127,1>Setting 13
+slider17:63<0,127,1>Setting 14
+slider18:63<0,127,1>Setting 15
+slider19:63<0,127,1>Setting 16
+
+slider20:32<0,127,1>Incoming CC
+slider21:32<0,127,1>Incoming Value
+
+//READ-ONLY SLIDERS
+slider22:99<0,127,1>Value 1 (read-only)
+slider23:99<0,127,1>Value 2 (read-only)
+slider24:99<0,127,1>Value 3 (read-only)
+slider25:99<0,127,1>Value 4 (read-only)
+slider26:99<0,127,1>Value 5 (read-only)
+slider27:99<0,127,1>Value 6 (read-only)
+slider28:99<0,127,1>Value 7 (read-only)
+slider29:99<0,127,1>Value 8 (read-only)
+slider30:99<0,127,1>Value 9 (read-only)
+slider31:99<0,127,1>Value 10 (read-only)
+slider32:99<0,127,1>Value 11 (read-only)
+slider33:99<0,127,1>Value 12 (read-only)
+slider34:99<0,127,1>Value 13 (read-only)
+slider35:99<0,127,1>Value 14 (read-only)
+slider36:99<0,127,1>Value 15 (read-only)
+slider37:99<0,127,1>Value 16 (read-only)
+
+@init
+
+function update_read_only()(
+  //UPDATES READ-ONLY THAT WILL BE USED FOR MODULATION
+  count = 1;
+
+  loop(16,
+    source_set = 1000*slider2; //the set we're USING
+    slider(fros+count-1) = source_set[count];
+    count += 1;
+  );
+);
+
+
+  ext_noinit = 1;
+
+  fros = 22; //[F]irst [R]ead [O]nly [S]lider
+  fcs = 4; //[F]irst [C]ead [S]lider
+
+  set1 = 1000;
+  set2 = 2000;
+  set3 = 3000;
+  set4 = 4000;
+  set5 = 5000;
+  set6 = 6000;
+  set7 = 7000;
+  set8 = 8000;
+  set9 = 9000;
+  set10 = 10000;
+  set11 = 11000;
+  set12 = 12000;
+  set13 = 13000;
+  set14 = 14000;
+  set15 = 15000;
+  set16 = 16000;
+
+  prev_set = 1;
+  update_read_only();
+
+  /*
+  count = 1;
+  loop(16,
+    set = 1000*count;
+    
+    count2 = 1;
+    loop(16,
+      set[count2] = (100*count)+count2;
+      count2 +=1;
+    );
+
+    count += 1;
+  );
+  */
+
+//bpos=0;
+//@slider
+//something=slider1*srate;
+
+
+
+
+
+@block
+ 
+while( midirecv(offset,msg1,msg23) ? (
+    status = msg1&$xF0; //Get status byte
+      
+    CC_number = msg23&$xff; //Get incoming CC number
+    CC_value = (msg23/256)&$xff; //Get incoming CC value
+    //We don't want to do anything if the incoming CC is unused
+      
+    //If we have recieved a CC message - The status byte will be between 176 and 191.
+status >= 176 && status <= 191 ? (
+          
+  //updates Incoming CC
+  slider20 = CC_number;
+  sliderchange(slider20);
+  //updates Incoming Value 
+  slider21 = CC_value;
+  sliderchange(slider21);
+
+  //IF THE SOURCE CC MATCHES
+  CC_number == slider1 ? (
+
+
+    //LETS UPDATE THE SET
+    CC_value < 8 ?(
+      slider2 = 1;
+      sliderchange(slider2);
+    );
+    CC_value < 16 && CC_value >= 8 ?(
+      slider2 = 2;
+      sliderchange(slider2);
+    );
+    CC_value < 24 && CC_value >= 16 ?(
+      slider2 = 3;
+      sliderchange(slider2);
+    );
+    CC_value < 32 && CC_value >= 24 ?(
+      slider2 = 4;
+      sliderchange(slider2);
+    );
+    CC_value < 40 && CC_value >= 32 ?(
+      slider2 = 5;
+      sliderchange(slider2);
+    );
+
+    count = 0;
+    loop(16,
+      
+      CC_value < (count+1)*8 && CC_value >= count*8 ? (
+        slider2 = count+1;
+        sliderchange(slider2);
+      );
+      count += 1;
+
+    );
+
+
+    //lets update the read-only controls used for modulation
+    update_read_only();
+    
+  ); //END IF THE SOURCE CC MATCHES
+        
+        
+        
+);             
+          
+     midisend(offset, msg1, msg23); //Pass on original message unchanged   
+      
+);) 
+//@sample
+//spl0=spl0;
+//spl1=spl1;
+
+@slider
+
+//IF WE CHANGED THE SET WE'RE EDITING, UPDATE THE CONTROL SLIDERS
+slider3 != prev_set ? (
+  source_set = 1000*(slider3+1); //the new set we're editing
+
+  count = 1;
+  loop(16,
+    slider(fcs+count-1) = source_set[count];
+    count += 1;
+  );
+
+  prev_set = slider3;
+);
+
+
+//UPDATES THE SET ARRAY ACCORDING TO THE CONTROL SLIDERS
+count = 1;
+
+loop(16,
+  source_set = 1000*(slider3+1); //the set we're EDITING
+  source_set[count] = slider(fcs+count-1);
+  count += 1;
+);
+
+//UPDATES READ-ONLY THAT WILL BE USED FOR MODULATION
+count = 1;
+
+loop(16,
+  source_set = 1000*slider2; //the set we're USING
+  slider(fros+count-1) = source_set[count];
+  count += 1;
+);
+
+@serialize
+file_mem(0,0,16016);
+//file_mem(0,0,24016);
