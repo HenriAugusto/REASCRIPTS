@@ -1,0 +1,135 @@
+desc:Midi Sustain Pedal
+ 
+slider1:91<0,127,1>Source MidiCC
+slider2:0<0,100,1>Pedal On/Off
+slider3:0<1,16,1>Channel
+slider4:0<0,127,1>note number
+slider5:0<0,127,1>Last CC
+slider6:0<0,127,1>CC value
+slider7:0<0,127,1>last held note
+slider8:0<0,127,1>still held phisically
+slider9:1<1,16,1>LAST CH FOR ALL NOTES OFF
+
+@init
+
+//noteOns[];
+//last_play_state=0;
+noteOns=0;
+//blocksize=666;
+
+function isNoteOn(msg1)(
+   ( msg1>=$x90 && msg1<=$x9F) ? ( 1 ): ( 0 );
+);
+
+function isNoteOff(msg1, msg3)(
+   //output=666;
+   //if note off msg
+   msg1>=$x80 && msg1<=$x8F ? ( output=1 ): ( output=0 );
+   //if noteon with 0 velocity
+   isNoteOn(msg1) && msg3==0 ?( output=1 );
+   output;
+);
+
+function isCC(msg1)(
+   ( msg1>=$xB0 && msg1<=$xBF) ? ( 1 ): ( 0 );
+);
+
+function getChannel(msg1)(
+   slider3= (msg1 % 16) +1;
+   msg1 % 16;
+);
+
+
+function sendAllNoteOffs(channel)(
+  count=0;
+  loop(127,
+     //release the key
+     noteOns[count]==0 ? ( //but only if it's not phisically held
+//        midisend(offset,$x8+channel-1,count, 0); //send note off
+        midisend(offset,128+channel,count, 0); //send note off
+        count=count+1;
+     ) : (
+        slider8=count;
+        count=count+1;
+     );
+  );
+);
+
+ch=0;
+loop(16,
+  sendAllNoteOffs(ch);
+  ch+=1;
+);
+
+/////end @init
+
+@block
+
+//blocksize=samplesblock;
+
+while (midirecv(offset,msg1,msg2,msg3)) ( // REAPER 4.59+ syntax while()
+
+       //if note on, register so we dont release it when pedal is off
+       isNoteOn(msg1) && msg3>0 ? (
+          noteOns[msg2]=1;
+          slider4=msg2;
+       );
+       
+       debug=msg1;
+            
+       //same for note-offs
+      isNoteOff(msg1, msg3) ? ( 
+          noteOns[msg2]=0; 
+       ); 
+
+       //if CC
+       isCC(msg1) ? (
+         //if pedal On
+         msg2==slider1 && msg3>=64 ? ( slider2=100 );
+  
+         //if pedal Off
+         msg2==slider1 && msg3<=63 ? ( 
+           slider2=0;
+           sendAllNoteOffs( getChannel(msg1) );
+           lastChannelForAllNotesOff = getChannel(msg1); 
+           thisRan+=1;
+         );
+         //debug Last CC and CC Value
+         slider5=msg2;
+         slider6=msg3;
+       );
+       
+       
+       //if note off and pedal is on
+       isNoteOff(msg1,msg3) && slider2>=64  ? (
+          slider7=msg2;
+          //midisend(offset,$x90, $x50, $x60);
+       ) : (
+         midisend(offset,msg1,msg2,msg3); // passthrough other events
+       );
+       
+       //this is needed in order to prevent notes being held
+       //when playback is stopped and pedal is active
+       //the use of last_play_state is because the @init block only runs on
+       //START of playback, but not on stop. This conditional detects when playback
+       //was stopped
+       last_play_state==1 && play_state==0 ? (
+          ch=0;
+          loop(16,
+            sendAllNoteOffs(ch);
+            ch+=1;
+          );
+          //midisend(offset,$x90, $x50, $x60);
+       );
+       last_play_state=play_state;
+       
+       
+); //end @block
+
+//@gfx
+
+//gfx_r=255;
+//gfx_x=10;
+//gfx_x=10;
+
+//gfx_drawstr( sprintf(what, "%{lastChannelForAllNotesOff}i" )  );
